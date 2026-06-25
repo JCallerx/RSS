@@ -1,5 +1,6 @@
-import { CommandsRegistry, getUsers, handlerLogin, handlerRegister, handlerReset, registerCommand, runCommand } from "./commands.js";
+import { CommandsRegistry, fetchFeed, getUsers, handlerLogin, handlerRegister, handlerReset, registerCommand, runCommand } from "./commands.js";
 import { readConfig, setUser } from "./config.js";
+import { agg } from "./commands/aggregate.js";
 
 async function main() {
   const registry: CommandsRegistry = {};
@@ -7,6 +8,7 @@ async function main() {
   registerCommand(registry, "register", handlerRegister);
   registerCommand(registry, "reset", handlerReset);
   registerCommand(registry, "users", getUsers);
+  registerCommand(registry, "agg", agg);
   const userArgs = process.argv.slice(2);
 
   if(userArgs.length < 1) {

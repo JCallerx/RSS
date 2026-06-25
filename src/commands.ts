@@ -2,6 +2,9 @@ import { readConfig, setUser } from "./config.js";
 import { db } from "./lib/db/index.js";
 import { users } from "./lib/db/schema.js";
 import { createUser, getUser } from "./lib/db/queries/users.js";
+import { XMLParser } from "fast-xml-parser";
+import { ne } from "drizzle-orm";
+import { channel } from "node:diagnostics_channel";
 
 export type CommandHandler = (
     cmdName: string,
@@ -72,3 +75,88 @@ export async function getUsers() {
     }
 
 }
+
+
+
+export async function fetchFeed(feedURL: string) {
+    const request = await fetch(feedURL, {
+        method: "GET",
+        headers: {
+            "User-Agent": "gator"
+        }
+    })
+
+    const xmlText = await request.text();
+
+    const parser = new XMLParser({
+        processEntities: false,
+    })
+
+    const parsed = parser.parse(xmlText);
+
+    if (!parsed.rss){
+        throw new Error("Rss tag missing")
+    }
+
+    if (!parsed.rss.channel) {
+        throw new Error("Channel tag missing")
+    }
+
+
+    //type checks
+
+    if(typeof parsed.rss.channel.title !== "string" || !parsed.rss.channel.title) {
+        throw new Error("title is required and must be a string")
+    }
+
+    if(typeof parsed.rss.channel.link !== "string" || !parsed.rss.channel.link) {
+        throw new Error("link is requiered and must be a string")
+    }
+
+    if(typeof parsed.rss.channel.description !== "string" || !parsed.rss.channel.description) {
+        throw new Error("description is required and must be a string")
+    }
+
+    //storage
+
+    const title = parsed.rss.channel.title
+    const link = parsed.rss.channel.link
+    const description = parsed.rss.channel.description
+
+    let items: any[] = []
+
+
+    if (!parsed.rss.channel.item){
+        items = []
+    } else if(Array.isArray(parsed.rss.channel.item)){
+        items = parsed.rss.channel.item
+    } else {
+        items = [parsed.rss.channel.item]
+    }
+
+    const results: any[] = [];
+
+    for (const item of items) {
+        const title = item.title
+        const link = item.link
+        const description = item.description
+        const pubDate = item.pubDate;
+
+        if(!title || !link || !description || !pubDate) {
+            continue
+        }
+        results.push({ title, link, description, pubDate });
+    }
+
+    return {
+        channel: {
+            title,
+            link,
+            description,
+            item: results,
+        }
+    }
+}
+
+
+
