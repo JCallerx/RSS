@@ -27,7 +27,7 @@ function validateConfig(raw: any): Config {
 
 export function readConfig() {
         const filepath = getConfigFilePath();
-        const data = fs.readFileSync(filepath, "utf-8")
+        const data = fs.readFileSync(filepath, "utf-8");
         const raw = JSON.parse(data);
         return validateConfig(raw);
 }

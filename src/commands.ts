@@ -1,4 +1,6 @@
-import { setUser } from "./config.js";
+import { readConfig, setUser } from "./config.js";
+import { db } from "./lib/db/index.js";
+import { users } from "./lib/db/schema.js";
 import { createUser, getUser } from "./lib/db/queries/users.js";
 
 export type CommandHandler = (
@@ -43,5 +45,30 @@ export async function handlerRegister(cmdName: string, ...args: string[]) {
     }
     const user = await createUser(args[0]);
     setUser(user.name);
-    console.log("user has successfully created")
+    console.log("User has been successfully created")
+}
+
+export async function handlerReset() {
+    await db.delete(users);
+    setUser("");
+    console.log("Database has been reset")
+}
+
+export async function getUsers() {
+    const allUsers = await db.select().from(users);
+    const currentUserName = readConfig().currentUserName;
+
+
+    if (allUsers.length === 0) {
+        console.log("(none)");
+    } else {
+        for (const user of allUsers) {
+            if (currentUserName === user.name) {
+                console.log(`* ${user.name} (current)`)
+                continue;
+            }
+            console.log(`* ${user.name}`);
+        }
+    }
+
 }
