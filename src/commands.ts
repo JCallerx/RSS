@@ -1,10 +1,11 @@
 import { readConfig, setUser } from "./config.js";
 import { db } from "./lib/db/index.js";
-import { users } from "./lib/db/schema.js";
+import { feeds, users } from "./lib/db/schema.js";
 import { createUser, getUser } from "./lib/db/queries/users.js";
 import { XMLParser } from "fast-xml-parser";
 import { ne } from "drizzle-orm";
 import { channel } from "node:diagnostics_channel";
+import { createFeed } from "./lib/db/queries/feeds.js";
 
 export type CommandHandler = (
     cmdName: string,
@@ -158,5 +159,37 @@ export async function fetchFeed(feedURL: string) {
     }
 }
 
+export async function addFeed(cmdName: string, ...args: string[]) {
+    if (args.length !== 2) {
+        throw new Error("usage: addFeed <feed name> <feed url>");
+    }
+    const feedName = args[0];
+    const feedUrl = args[1];
+
+    const config = readConfig();
+    const username = config.currentUserName;
+    const currentUser = await getUser(username);
+
+    if (!currentUser) {
+        throw new Error("current user not found")
+    }
+
+    const feed = await createFeed(feedName, feedUrl, currentUser.id);
+    console.log(feed)
+
+}
+
+export type Feed = typeof feeds.$inferSelect;
+export type User = typeof users.$inferSelect;
 
 
+export function printFeed(feed: Feed, user: User) {
+    console.log("Feed:")
+    console.log("   Name:", feed.name);
+    console.log("   URL:", feed.url);
+    console.log("   ID:", feed.id);
+    console.log("   Created At:", feed.createdAt);
+    console.log("   Updated At:", feed.updatedAt);
+    console.log("   User ID:", feed.userId);
+    console.log("   Added by:", user.name);
+}
