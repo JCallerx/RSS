@@ -1,7 +1,8 @@
 import { readConfig, setUser } from "./config.js";
 import { db } from "./lib/db/index.js";
 import { feeds, users } from "./lib/db/schema.js";
-import { createUser, getUser } from "./lib/db/queries/users.js";
+import { createUser, getUser, getUserById } from "./lib/db/queries/users.js";
+import { getFeeds } from "./lib/db/queries/feeds.js";
 import { XMLParser } from "fast-xml-parser";
 import { ne } from "drizzle-orm";
 import { channel } from "node:diagnostics_channel";
@@ -192,4 +193,22 @@ export function printFeed(feed: Feed, user: User) {
     console.log("   Updated At:", feed.updatedAt);
     console.log("   User ID:", feed.userId);
     console.log("   Added by:", user.name);
+}
+
+export async function handlerListFeeds() {
+    const allFeeds = await getFeeds();
+
+    if (allFeeds.length === 0) {
+        console.log("(none)");
+        return;
+    }
+
+    for (const feed of allFeeds) {
+        const creator = await getUserById(feed.userId);
+        const creatorName = creator?.name ?? "(unknown)";
+
+        console.log(`* ${feed.name}`);
+        console.log(`  URL: ${feed.url}`);
+        console.log(`  Added by: ${creatorName}`);
+    }
 }
