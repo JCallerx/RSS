@@ -2,11 +2,13 @@ import { readConfig, setUser } from "./config.js";
 import { db } from "./lib/db/index.js";
 import { feeds, users } from "./lib/db/schema.js";
 import { createUser, getUser, getUserById } from "./lib/db/queries/users.js";
-import { getFeeds } from "./lib/db/queries/feeds.js";
+import { getFeedByUrl, getFeeds } from "./lib/db/queries/feeds.js";
 import { XMLParser } from "fast-xml-parser";
 import { ne } from "drizzle-orm";
 import { channel } from "node:diagnostics_channel";
 import { createFeed } from "./lib/db/queries/feeds.js";
+import { get } from "node:http";
+import { createFeedFollow, getFeedFollowsForUser } from "./lib/db/queries/feedfollow.js";
 
 export type CommandHandler = (
     cmdName: string,
@@ -176,8 +178,14 @@ export async function addFeed(cmdName: string, ...args: string[]) {
     }
 
     const feed = await createFeed(feedName, feedUrl, currentUser.id);
-    console.log(feed)
+    
+    if(!feed){
+        throw new Error("failed to create feed")
+    }
 
+    const feedFollow = await createFeedFollow(currentUser.id, feed.id)
+    console.log(feedFollow.feedName);
+    console.log(feedFollow.userName);
 }
 
 export type Feed = typeof feeds.$inferSelect;
@@ -211,4 +219,42 @@ export async function handlerListFeeds() {
         console.log(`  URL: ${feed.url}`);
         console.log(`  Added by: ${creatorName}`);
     }
+}
+
+
+
+export async function follow(cmdName: string, ...args: string[]) {
+    if (args.length !== 1) {
+        throw new Error("Usage: follow <Feed URL>")
+    }
+
+    const config = readConfig();
+    const user = await getUser(config.currentUserName);
+
+    if(!user) {
+        throw new Error(`User ${config.currentUserName} was not found`)
+    }
+
+    const feed =await getFeedByUrl(args[0]);
+    
+    const feedFollow = await createFeedFollow(user.id, feed.id)
+    console.log(feedFollow.feedName);
+    console.log(feedFollow.userName)
+
+}
+
+export async function following(){
+    const config = readConfig();
+    const user = await getUser(config.currentUserName);
+
+    if(!user) {
+        throw new Error(`User ${config.currentUserName} was not found`)
+    }
+
+    const feedsFollowed = await getFeedFollowsForUser(user.id);
+
+    for(const feed of feedsFollowed) {
+        console.log(feed.feedName)
+    }
+
 }

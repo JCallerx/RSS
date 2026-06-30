@@ -1,4 +1,4 @@
-import { addFeed, CommandsRegistry, fetchFeed, getUsers, handlerListFeeds, handlerLogin, handlerRegister, handlerReset, registerCommand, runCommand } from "./commands.js";
+import { addFeed, CommandsRegistry, fetchFeed, follow, following, getUsers, handlerListFeeds, handlerLogin, handlerRegister, handlerReset, registerCommand, runCommand } from "./commands.js";
 import { readConfig, setUser } from "./config.js";
 import { agg } from "./commands/aggregate.js";
 
@@ -11,6 +11,8 @@ async function main() {
   registerCommand(registry, "agg", agg);
   registerCommand(registry, "addfeed", addFeed)
   registerCommand(registry, "feeds", handlerListFeeds)
+  registerCommand(registry, "follow", follow)
+  registerCommand(registry, "following", following)
   const userArgs = process.argv.slice(2);
 
   if(userArgs.length < 1) {
