@@ -9,6 +9,7 @@ import { channel } from "node:diagnostics_channel";
 import { createFeed } from "./lib/db/queries/feeds.js";
 import { get } from "node:http";
 import { createFeedFollow, getFeedFollowsForUser } from "./lib/db/queries/feedfollow.js";
+import { deleteFeedFollow } from "./lib/db/queries/feedUnfollow.js";
 
 export type CommandHandler = (
     cmdName: string,
@@ -237,4 +238,24 @@ export async function following(cmdName:string, user: User){
         console.log(feed.feedName)
     }
 
+}
+
+export async function unfollow(cmdName: string, user: User, ...args: string[]) {
+    if (args.length !== 1) {
+        throw new Error("Usage: unfollow <Feed URL>")
+    }
+
+    const feed = await getFeedByUrl(args[0]);
+
+    if (!feed) {
+        throw new Error(`Feed ${args[0]} was not found`)
+    }
+
+    const deletedFollow = await deleteFeedFollow(user.id, feed.id);
+
+    if (!deletedFollow) {
+        throw new Error(`You are not following ${feed.name}`)
+    }
+
+    console.log(`Unfollowed ${feed.name}`)
 }
