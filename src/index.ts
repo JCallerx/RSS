@@ -1,6 +1,7 @@
 import { addFeed, CommandsRegistry, fetchFeed, follow, following, getUsers, handlerListFeeds, handlerLogin, handlerRegister, handlerReset, registerCommand, runCommand } from "./commands.js";
 import { readConfig, setUser } from "./config.js";
 import { agg } from "./commands/aggregate.js";
+import { middlewareLoggedIn } from "./middleware.js";
 
 async function main() {
   const registry: CommandsRegistry = {};
@@ -9,10 +10,10 @@ async function main() {
   registerCommand(registry, "reset", handlerReset);
   registerCommand(registry, "users", getUsers);
   registerCommand(registry, "agg", agg);
-  registerCommand(registry, "addfeed", addFeed)
+  registerCommand(registry, "addfeed", middlewareLoggedIn(addFeed))
   registerCommand(registry, "feeds", handlerListFeeds)
-  registerCommand(registry, "follow", follow)
-  registerCommand(registry, "following", following)
+  registerCommand(registry, "follow", middlewareLoggedIn(follow))
+  registerCommand(registry, "following", middlewareLoggedIn(following))
   const userArgs = process.argv.slice(2);
 
   if(userArgs.length < 1) {

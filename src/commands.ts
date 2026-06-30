@@ -162,28 +162,20 @@ export async function fetchFeed(feedURL: string) {
     }
 }
 
-export async function addFeed(cmdName: string, ...args: string[]) {
+export async function addFeed(cmdName: string, user: User, ...args: string[]) {
     if (args.length !== 2) {
         throw new Error("usage: addFeed <feed name> <feed url>");
     }
     const feedName = args[0];
     const feedUrl = args[1];
 
-    const config = readConfig();
-    const username = config.currentUserName;
-    const currentUser = await getUser(username);
+    const feed = await createFeed(feedName, feedUrl, user.id);
 
-    if (!currentUser) {
-        throw new Error("current user not found")
-    }
-
-    const feed = await createFeed(feedName, feedUrl, currentUser.id);
-    
     if(!feed){
         throw new Error("failed to create feed")
     }
 
-    const feedFollow = await createFeedFollow(currentUser.id, feed.id)
+    const feedFollow = await createFeedFollow(user.id, feed.id)
     console.log(feedFollow.feedName);
     console.log(feedFollow.userName);
 }
@@ -223,16 +215,9 @@ export async function handlerListFeeds() {
 
 
 
-export async function follow(cmdName: string, ...args: string[]) {
+export async function follow(cmdName: string, user: User, ...args: string[]) {
     if (args.length !== 1) {
         throw new Error("Usage: follow <Feed URL>")
-    }
-
-    const config = readConfig();
-    const user = await getUser(config.currentUserName);
-
-    if(!user) {
-        throw new Error(`User ${config.currentUserName} was not found`)
     }
 
     const feed =await getFeedByUrl(args[0]);
@@ -243,13 +228,8 @@ export async function follow(cmdName: string, ...args: string[]) {
 
 }
 
-export async function following(){
-    const config = readConfig();
-    const user = await getUser(config.currentUserName);
+export async function following(cmdName:string, user: User){
 
-    if(!user) {
-        throw new Error(`User ${config.currentUserName} was not found`)
-    }
 
     const feedsFollowed = await getFeedFollowsForUser(user.id);
 
