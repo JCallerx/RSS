@@ -10,6 +10,7 @@ import { createFeed } from "./lib/db/queries/feeds.js";
 import { get } from "node:http";
 import { createFeedFollow, getFeedFollowsForUser } from "./lib/db/queries/feedfollow.js";
 import { deleteFeedFollow } from "./lib/db/queries/feedUnfollow.js";
+import { getPostsForUser } from "./createPost.js";
 
 export type CommandHandler = (
     cmdName: string,
@@ -258,4 +259,32 @@ export async function unfollow(cmdName: string, user: User, ...args: string[]) {
     }
 
     console.log(`Unfollowed ${feed.name}`)
+}
+
+export async function browse(cmdName: string, user: User, ...args: string[]) {
+    if (args.length > 1) {
+        throw new Error("Usage: browse [limit]")
+    }
+
+    const limit = args[0] ? Number.parseInt(args[0], 10) : 2;
+
+    if (Number.isNaN(limit) || limit <= 0) {
+        throw new Error("Limit must be a positive number")
+    }
+
+    const posts = await getPostsForUser(user.id, limit);
+
+    if (posts.length === 0) {
+        console.log("(none)");
+        return;
+    }
+
+    console.log(`Posts for ${user.name}:`);
+    for (const row of posts) {
+        console.log(`- ${row.posts.title}`);
+        console.log(`  Feed: ${row.feeds.name}`);
+        console.log(`  Link: ${row.posts.url}`);
+        console.log(`  Description: ${row.posts.description ?? ""}`);
+        console.log(`  Published At: ${row.posts.publishedAt}`);
+    }
 }
